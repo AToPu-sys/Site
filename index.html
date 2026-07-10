@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S. — Stark Industries AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<style>
+/* ═══════════════════════════════════════════════
+   J.A.R.V.I.S. — STARK INDUSTRIES AI INTERFACE
+   ═══════════════════════════════════════════════ */
+:root {
+  --cyan: #00d4ff;
+  --cyan-dim: rgba(0,212,255,0.15);
+  --cyan-glow: rgba(0,212,255,0.5);
+  --orange: #ff6b00;
+  --orange-dim: rgba(255,107,0,0.15);
+  --green: #00ff88;
+  --red: #ff3333;
+  --bg: #000;
+  --panel: rgba(0,12,25,0.92);
+  --border: rgba(0,212,255,0.18);
+  --text: #a8e8ff;
+  --font-hud: 'Share Tech Mono', monospace;
+  --font-title: 'Orbitron', sans-serif;
+  --font-body: 'Rajdhani', sans-serif;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--cyan);
+  font-family: var(--font-body);
+  cursor: crosshair;
+}
+
+/* ── BACKGROUND LAYERS ── */
+.layer-grid {
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,180,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,180,255,0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: gridShift 25s linear infinite;
+}
+@keyframes gridShift { to { background-position: 48px 48px; } }
+
+.layer-radial {
+  position: fixed; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% -10%, #001f3d 0%, transparent 70%);
+}
+.layer-scanline {
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,212,255,0.012) 3px, rgba(0,212,255,0.012) 4px);
+}
+.layer-vignette {
+  position: fixed; inset: 0; z-index: 998; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%);
+}
+
+/* ── PARTICLES ── */
+#particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+/* ── MAIN LAYOUT ── */
+.app {
+  position: relative; z-index: 10;
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column;
+  padding: 8px 10px;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.logo {
+  font-family: var(--font-title);
+  font-size: 20px; font-weight: 900;
+  letter-spacing: 10px;
+  color: var(--cyan);
+  text-shadow: 0 0 30px var(--cyan-glow);
+}
+.logo span { color: var(--orange); }
+.header-center {
+  display: flex; gap: 24px; align-items: center;
+  font-family: var(--font-hud); font-size: 10px;
+  color: rgba(0,212,255,0.5);
+}
+.hc-block { text-align: center; }
+.hc-block .val { font-size: 16px; color: var(--cyan); font-weight: 700; letter-spacing: 2px; }
+.header-right {
+  display: flex; gap: 16px; align-items: center;
+  font-family: var(--font-hud); font-size: 10px;
+  color: rgba(0,212,255,0.5);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); display: inline-block; margin-right: 4px; animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── BODY GRID ── */
+.body {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: 210px 1fr 210px;
+  grid-template-rows: 1fr;
+  gap: 8px;
+}
+
+/* ── PANEL BASE ── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 12px;
+  position: relative;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.panel::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+.panel::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,212,255,0.25), transparent);
+}
+/* corner decorations */
+.panel .c { position: absolute; width: 8px; height: 8px; border-color: rgba(0,212,255,0.3); border-style: solid; }
+.panel .c.tl { top:3px; left:3px; border-width:1px 0 0 1px; }
+.panel .c.tr { top:3px; right:3px; border-width:1px 1px 0 0; }
+.panel .c.bl { bottom:3px; left:3px; border-width:0 0 1px 1px; }
+.panel .c.br { bottom:3px; right:3px; border-width:0 1px 1px 0; }
+
+.ptitle {
+  font-family: var(--font-hud);
+  font-size: 8px; letter-spacing: 3px;
+  color: rgba(0,212,255,0.4);
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(0,212,255,0.08);
+  padding-bottom: 5px;
+  flex-shrink: 0;
+}
+
+/* ── LEFT PANEL ── */
+.left-panel { gap: 0; }
+
+/* Arc Reactor */
+.reactor-wrap { display: flex; justify-content: center; padding: 8px 0; flex-shrink: 0; }
+.reactor { width: 90px; height: 90px; position: relative; }
+.reactor svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.r1 { animation: spin 12s linear infinite; transform-origin: 45px 45px; }
+.r2 { animation: spin 7s linear infinite reverse; transform-origin: 45px 45px; }
+.r3 { animation: spin 20s linear infinite; transform-origin: 45px 45px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.reactor-core {
+  position: absolute; inset: 30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #00e5ff, #0055ff);
+  box-shadow: 0 0 15px var(--cyan), 0 0 35px rgba(0,212,255,0.4), inset 0 0 10px rgba(255,255,255,0.3);
+  animation: corePulse 2.5s ease-in-out infinite;
+}
+@keyframes corePulse {
+  0%,100% { box-shadow: 0 0 12px var(--cyan), 0 0 28px rgba(0,212,255,0.3); }
+  50% { box-shadow: 0 0 22px var(--cyan), 0 0 55px rgba(0,212,255,0.6), 0 0 80px rgba(0,212,255,0.2); }
+}
+
+/* Clock */
+.clock-block { text-align: center; margin: 4px 0; flex-shrink: 0; }
+.clock-time { font-family: var(--font-title); font-size: 24px; font-weight: 700; color: var(--cyan); letter-spacing: 3px; text-shadow: 0 0 12px var(--cyan-glow); }
+.clock-date { font-family: var(--font-hud); font-size: 9px; color: rgba(0,212,255,0.45); letter-spacing: 2px; margin-top: 2px; }
+
+/* Voice Visualizer */
+.vviz { display: flex; align-items: flex-end; justify-content: center; gap: 2px; height: 44px; margin: 6px 0; flex-shrink: 0; }
+.vbar { width: 3px; background: var(--cyan); border-radius: 2px; transition: height 0.07s ease; box-shadow: 0 0 4px rgba(0,212,255,0.3); min-height: 2px; }
+
+/* System Stats */
+.stat-block { margin-bottom: 7px; flex-shrink: 0; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.stat-label { font-family: var(--font-hud); font-size: 8px; letter-spacing: 2px; color: rgba(0,212,255,0.4); }
+.stat-val { font-family: var(--font-hud); font-size: 9px; color: var(--green); }
+.sbar { height: 2px; background: rgba(0,212,255,0.07); border-radius: 1px; overflow: hidden; }
+.sfill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); border-radius: 1px; transition: width 1.5s ease; }
+
+/* Weather */
+.weather-wrap { border: 1px solid rgba(0,212,255,0.1); border-radius: 2px; padding: 8px; text-align: center; margin-bottom: 7px; flex-shrink: 0; }
+.weather-temp { font-family: var(--font-title); font-size: 28px; color: var(--cyan); }
+.weather-sub { font-family: var(--font-hud); font-size: 8px; color: rgba(0,212,255,0.45); letter-spacing: 2px; margin-top: 2px; }
+.weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 7px; flex-shrink: 0; }
+.wcard { border: 1px solid rgba(0,212,255,0.1); border-radius: 2px; padding: 4px; text-align: center; }
+.wcard .wv { font-family: var(--font-hud); font-size: 12px; color: var(--cyan); }
+.wcard .wl { font-size: 8px; color: rgba(0,212,255,0.4); letter-spacing: 1px; margin-top: 1px; }
+
+/* Uptime & Timer */
+.uptime-block { text-align: center; flex-shrink: 0; }
+.uptime-val { font-family: var(--font-title); font-size: 14px; color: var(--cyan); letter-spacing: 2px; }
+
+.timer-box {
+  display: none; border: 1px solid rgba(255,107,0,0.3); border-radius: 2px;
+  padding: 6px; text-align: center; margin-top: 6px; flex-shrink: 0;
+  animation: timerGlow 1s ease-in-out infinite alternate;
+}
+.timer-box.on { display: block; }
+@keyframes timerGlow { from { border-color: rgba(255,107,0,.2); } to { border-color: rgba(255,107,0,.6); } }
+.timer-val { font-family: var(--font-title); font-size: 20px; color: var(--orange); letter-spacing: 3px; }
+.timer-label { font-family: var(--font-hud); font-size: 8px; color: rgba(255,107,0,0.5); letter-spacing: 2px; }
+.timer-cancel { margin-top: 4px; background: transparent; border: 1px solid rgba(255,107,0,0.3); color: rgba(255,107,0,0.6); padding: 2px 8px; font-family: var(--font-hud); font-size: 8px; cursor: pointer; border-radius: 1px; letter-spacing: 1px; }
+
+/* ── CENTER PANEL ── */
+.center-panel { display: flex; flex-direction: column; }
+
+/* JARVIS Face Row */
+.jface-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 8px; padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0,212,255,0.1);
+  flex-shrink: 0;
+}
+.jface-circle {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 2px solid var(--cyan);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-title); font-size: 11px; font-weight: 700;
+  color: var(--cyan); flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(0,212,255,0.25);
+  animation: facePulse 3s ease-in-out infinite;
+}
+@keyframes facePulse {
+  0%,100% { box-shadow: 0 0 10px rgba(0,212,255,0.2); }
+  50% { box-shadow: 0 0 25px rgba(0,212,255,0.5); }
+}
+.jface-info .jname { font-family: var(--font-title); font-size: 12px; font-weight: 700; color: var(--cyan); letter-spacing: 3px; }
+.jface-info .jsub { font-family: var(--font-hud); font-size: 8px; color: rgba(0,212,255,0.4); letter-spacing: 2px; margin-top: 2px; }
+.jface-status { margin-left: auto; text-align: right; }
+.status-pill {
+  display: inline-block; padding: 3px 10px;
+  border: 1px solid rgba(0,255,136,0.4);
+  border-radius: 20px; font-family: var(--font-hud);
+  font-size: 9px; color: var(--green); letter-spacing: 2px;
+}
+.mode-label { font-family: var(--font-hud); font-size: 8px; color: rgba(0,212,255,0.35); letter-spacing: 2px; margin-top: 3px; text-align: right; }
+
+/* Quick Commands */
+.qcmds { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; flex-shrink: 0; }
+.qbtn {
+  background: rgba(0,25,45,0.7); border: 1px solid rgba(0,212,255,0.18);
+  color: rgba(0,212,255,0.65); padding: 4px 9px;
+  font-family: var(--font-hud); font-size: 9px; letter-spacing: 1px;
+  border-radius: 2px; cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.qbtn:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,212,255,0.05); box-shadow: 0 0 8px rgba(0,212,255,0.1); }
+.qbtn:active { transform: scale(0.97); }
+
+/* TABS */
+.tabs { display: flex; gap: 2px; margin-bottom: 6px; flex-shrink: 0; }
+.tab {
+  padding: 4px 12px; font-family: var(--font-hud); font-size: 9px; letter-spacing: 2px;
+  border: 1px solid rgba(0,212,255,0.15); color: rgba(0,212,255,0.4);
+  background: transparent; cursor: pointer; border-radius: 2px; transition: all .15s;
+}
+.tab.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,212,255,0.07); }
+.tab-content { display: none; flex: 1; flex-direction: column; min-height: 0; }
+.tab-content.active { display: flex; }
+
+/* Messages */
+.msgs { flex: 1; overflow-y: auto; padding-right: 6px; scroll-behavior: smooth; }
+.msgs::-webkit-scrollbar { width: 2px; }
+.msgs::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); }
+.msg { margin-bottom: 10px; animation: msgIn .3s ease; }
+@keyframes msgIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.msg.user { text-align: right; }
+.mlabel { font-family: var(--font-hud); font-size: 8px; letter-spacing: 2px; margin-bottom: 3px; }
+.msg.jarvis .mlabel { color: rgba(0,212,255,0.35); }
+.msg.user .mlabel { color: rgba(255,107,0,0.45); }
+.msg.sys .mlabel { color: rgba(0,255,136,0.35); }
+.mbubble {
+  display: inline-block; padding: 7px 11px;
+  border-radius: 2px; font-size: 13px; max-width: 90%; line-height: 1.55;
+}
+.msg.jarvis .mbubble {
+  background: rgba(0,35,60,0.6); border: 1px solid rgba(0,212,255,0.12);
+  border-left: 2px solid var(--cyan); color: var(--text);
+}
+.msg.user .mbubble {
+  background: rgba(255,107,0,0.07); border: 1px solid rgba(255,107,0,0.18);
+  border-right: 2px solid var(--orange); color: #ffd0a0;
+}
+.msg.sys .mbubble {
+  background: rgba(0,255,136,0.04); border: 1px solid rgba(0,255,136,0.15);
+  border-left: 2px solid var(--green); color: rgba(0,255,136,0.8);
+  font-family: var(--font-hud); font-size: 10px;
+}
+
+/* THINKING */
+.thinking { display: none; align-items: center; gap: 5px; padding: 5px 10px; font-family: var(--font-hud); font-size: 9px; color: rgba(0,212,255,0.45); letter-spacing: 2px; flex-shrink: 0; }
+.thinking.on { display: flex; }
+.tdot { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); animation: td 1.4s infinite ease-in-out; }
+.tdot:nth-child(2) { animation-delay: .2s; }
+.tdot:nth-child(3) { animation-delay: .4s; }
+@keyframes td { 0%,80%,100%{transform:scale(.5);opacity:.3} 40%{transform:scale(1);opacity:1} }
+
+/* INPUT ROW */
+.inp-row {
+  display: flex; gap: 5px; align-items: center;
+  border-top: 1px solid rgba(0,212,255,0.12);
+  padding-top: 8px; flex-shrink: 0;
+}
+.hinput {
+  flex: 1; background: rgba(0,18,35,0.9);
+  border: 1px solid rgba(0,212,255,0.22); color: var(--cyan);
+  padding: 9px 13px; font-family: var(--font-body); font-size: 14px;
+  border-radius: 2px; outline: none; transition: border-color .2s;
+}
+.hinput:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,212,255,0.08); }
+.hinput::placeholder { color: rgba(0,212,255,0.22); }
+.ibtn {
+  background: transparent; border: 1px solid rgba(0,212,255,0.25);
+  color: var(--cyan); width: 38px; height: 38px; border-radius: 2px;
+  cursor: pointer; font-size: 15px; display: flex; align-items: center;
+  justify-content: center; transition: all .15s; flex-shrink: 0;
+}
+.ibtn:hover { background: rgba(0,212,255,0.07); border-color: var(--cyan); }
+.ibtn:active { transform: scale(0.95); }
+.ibtn.mic { border-color: rgba(255,107,0,0.3); color: var(--orange); }
+.ibtn.mic:hover { background: rgba(255,107,0,0.07); border-color: var(--orange); }
+.ibtn.mic.on { background: rgba(255,107,0,0.15); border-color: var(--orange); animation: micPulse 1s infinite; }
+@keyframes micPulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,107,0,.4)} 50%{box-shadow:0 0 0 8px rgba(255,107,0,0)} }
+
+/* NOTE TAB */
+.note-area {
+  flex: 1; background: rgba(0,18,35,0.7); border: 1px solid rgba(0,212,255,0.12);
+  color: var(--text); padding: 10px; font-family: var(--font-body); font-size: 14px;
+  line-height: 1.6; border-radius: 2px; resize: none; outline: none;
+  font-weight: 400; min-height: 0;
+}
+.note-area::placeholder { color: rgba(0,212,255,0.2); }
+
+/* CALC TAB */
+.calc-wrap { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.calc-display {
+  background: rgba(0,18,35,0.8); border: 1px solid rgba(0,212,255,0.15);
+  padding: 10px 14px; text-align: right; border-radius: 2px;
+}
+.calc-expr { font-family: var(--font-hud); font-size: 10px; color: rgba(0,212,255,0.4); min-height: 14px; }
+.calc-result { font-family: var(--font-title); font-size: 28px; color: var(--cyan); }
+.calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.cbtn {
+  padding: 10px 4px; background: rgba(0,25,45,0.7); border: 1px solid rgba(0,212,255,0.15);
+  color: var(--cyan); font-family: var(--font-hud); font-size: 12px; cursor: pointer;
+  border-radius: 2px; transition: all .1s; text-align: center;
+}
+.cbtn:hover { background: rgba(0,212,255,0.08); border-color: var(--cyan); }
+.cbtn:active { transform: scale(0.95); }
+.cbtn.op { color: var(--orange); border-color: rgba(255,107,0,0.2); }
+.cbtn.special { color: var(--green); border-color: rgba(0,255,136,0.2); }
+.cbtn.equals { background: rgba(0,212,255,0.12); border-color: var(--cyan); }
+
+/* REMINDERS TAB */
+.rem-list { flex: 1; overflow-y: auto; }
+.rem-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid rgba(0,212,255,0.06);
+  font-family: var(--font-hud); font-size: 10px; color: rgba(0,212,255,0.6);
+}
+.rem-item.done { color: rgba(0,212,255,0.3); text-decoration: line-through; }
+.rem-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; }
+.rem-dot.done { background: rgba(0,212,255,0.2); }
+.rem-del { margin-left: auto; background: transparent; border: none; color: rgba(255,50,50,0.4); cursor: pointer; font-size: 11px; }
+.rem-del:hover { color: rgba(255,50,50,0.8); }
+.rem-input-row { display: flex; gap: 4px; margin-top: 6px; flex-shrink: 0; }
+.rem-inp {
+  flex: 1; background: rgba(0,18,35,0.8); border: 1px solid rgba(0,212,255,0.15);
+  color: var(--cyan); padding: 7px 10px; font-family: var(--font-hud); font-size: 10px;
+  border-radius: 2px; outline: none;
+}
+.rem-inp::placeholder { color: rgba(0,212,255,0.2); }
+.rem-add { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.3); color: var(--cyan); padding: 7px 12px; font-family: var(--font-hud); font-size: 10px; cursor: pointer; border-radius: 2px; letter-spacing: 1px; }
+
+/* ── RIGHT PANEL ── */
+.right-panel { gap: 0; }
+
+.threat-block { text-align: center; margin-bottom: 8px; flex-shrink: 0; }
+.threat-val { font-family: var(--font-title); font-size: 22px; font-weight: 700; color: var(--green); letter-spacing: 4px; text-shadow: 0 0 12px rgba(0,255,136,0.4); }
+.threat-label { font-family: var(--font-hud); font-size: 8px; color: rgba(0,255,136,0.4); letter-spacing: 2px; }
+
+.proto-list { margin-bottom: 8px; flex-shrink: 0; }
+.proto { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-hud); font-size: 9px; padding: 4px 0; border-bottom: 1px solid rgba(0,212,255,0.06); }
+.proto .pk { color: rgba(0,212,255,0.45); letter-spacing: 1px; }
+.proto .pv { color: var(--green); }
+.proto .pv.warn { color: var(--orange); }
+.proto .pv.off { color: rgba(255,50,50,0.6); }
+
+.alog { flex-shrink: 0; margin-bottom: 8px; }
+.alog-list { display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow-y: auto; }
+.alog-item { font-family: var(--font-hud); font-size: 8px; color: rgba(0,212,255,0.3); padding: 2px 0; border-bottom: 1px solid rgba(0,212,255,0.04); }
+
+.counters { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; flex-shrink: 0; }
+.counter-card { border: 1px solid rgba(0,212,255,0.1); border-radius: 2px; padding: 6px; text-align: center; }
+.counter-card .cv { font-family: var(--font-title); font-size: 18px; color: var(--cyan); }
+.counter-card .cl { font-family: var(--font-hud); font-size: 7px; color: rgba(0,212,255,0.35); letter-spacing: 1px; margin-top: 2px; }
+
+/* SOUND CONTROL */
+.sound-ctrl { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-shrink: 0; }
+.sound-label { font-family: var(--font-hud); font-size: 8px; color: rgba(0,212,255,0.4); letter-spacing: 2px; flex-shrink: 0; }
+.sound-slider { flex: 1; height: 2px; background: rgba(0,212,255,0.15); border-radius: 1px; appearance: none; outline: none; cursor: pointer; }
+.sound-slider::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); cursor: pointer; box-shadow: 0 0 6px var(--cyan); }
+
+/* ── VOICE OVERLAY ── */
+.voverlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.9);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+}
+.voverlay.show { display: flex; }
+.vring {
+  width: 160px; height: 160px; border-radius: 50%;
+  border: 1px solid rgba(0,212,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; animation: vRing 1.5s ease-in-out infinite;
+}
+@keyframes vRing { 0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.35)} 50%{box-shadow:0 0 0 30px rgba(0,212,255,0)} }
+.vring::before { content:''; position:absolute; inset:18px; border-radius:50%; border:1px solid rgba(0,212,255,0.15); animation:vRing 1.5s ease-in-out infinite .3s; }
+.vring::after { content:''; position:absolute; inset:36px; border-radius:50%; border:1px solid rgba(255,107,0,0.25); animation:vRing 1.5s ease-in-out infinite .6s; }
+.vmic-icon { font-size: 44px; color: var(--orange); text-shadow: 0 0 20px rgba(255,107,0,0.5); }
+.voverlay-text { margin-top: 18px; font-family: var(--font-title); font-size: 12px; letter-spacing: 4px; color: var(--cyan); }
+.vtranscript { margin-top: 8px; font-family: var(--font-hud); font-size: 12px; color: rgba(0,212,255,0.55); max-width: 380px; text-align: center; min-height: 18px; }
+.vstop { margin-top: 22px; background: transparent; border: 1px solid rgba(255,107,0,0.35); color: rgba(255,107,0,0.7); padding: 8px 22px; font-family: var(--font-title); font-size: 10px; letter-spacing: 3px; cursor: pointer; border-radius: 2px; }
+
+/* ── SPEAKING BAR ── */
+.speak-bar {
+  position: fixed; bottom: 14px; right: 14px; z-index: 400;
+  background: rgba(0,8,18,0.97); border: 1px solid rgba(0,212,255,0.25);
+  border-left: 2px solid var(--cyan); border-radius: 2px;
+  padding: 8px 14px; font-family: var(--font-hud); font-size: 10px; color: var(--cyan);
+  display: none; align-items: center; gap: 8px; letter-spacing: 2px;
+}
+.speak-bar.show { display: flex; }
+.speak-dot { color: var(--green); animation: blink .8s infinite; }
+.speak-stop { background: transparent; border: none; color: rgba(255,107,0,0.55); cursor: pointer; font-size: 13px; margin-left: 6px; }
+
+/* ── NOTIFICATION ── */
+.notif {
+  position: fixed; top: 60px; right: 14px; z-index: 300;
+  background: rgba(0,8,18,0.97); border: 1px solid rgba(0,212,255,0.25);
+  border-left: 3px solid var(--cyan); border-radius: 2px;
+  padding: 9px 14px; font-family: var(--font-hud); font-size: 10px; color: var(--cyan);
+  max-width: 260px; display: none; animation: notifIn .25s ease; letter-spacing: 1px; line-height: 1.5;
+}
+.notif.show { display: block; }
+@keyframes notifIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+
+/* ── MODAL ── */
+.modal-wrap { position: fixed; inset: 0; z-index: 450; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; }
+.modal-wrap.show { display: flex; }
+.modal {
+  background: rgba(0,12,25,0.98); border: 1px solid rgba(0,212,255,0.28);
+  border-radius: 3px; padding: 22px; min-width: 300px; text-align: center;
+  position: relative;
+}
+.modal::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); }
+.modal-title { font-family: var(--font-title); font-size: 12px; letter-spacing: 3px; color: var(--cyan); margin-bottom: 14px; }
+.modal-input {
+  width: 100%; background: rgba(0,18,35,0.9); border: 1px solid rgba(0,212,255,0.25);
+  color: var(--cyan); padding: 10px 14px; font-family: var(--font-body); font-size: 15px;
+  border-radius: 2px; outline: none; text-align: center; margin-bottom: 12px;
+}
+.modal-input::placeholder { color: rgba(0,212,255,0.22); }
+.modal-btns { display: flex; gap: 8px; justify-content: center; }
+.mbtn-ok { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.35); color: var(--cyan); padding: 8px 22px; font-family: var(--font-hud); font-size: 10px; cursor: pointer; border-radius: 2px; letter-spacing: 2px; }
+.mbtn-cancel { background: transparent; border: 1px solid rgba(255,50,50,0.25); color: rgba(255,100,100,0.5); padding: 8px 22px; font-family: var(--font-hud); font-size: 10px; cursor: pointer; border-radius: 2px; letter-spacing: 2px; }
+
+/* custom cursor */
+* { cursor: crosshair; }
+button, input, textarea, select { cursor: pointer; }
+input, textarea { cursor: text; }
+</style>
+</head>
+<body>
+
+<div class="layer-grid"></div>
+<div class="layer-radial"></div>
+<div class="layer-scanline"></div>
+<div class="layer-vignette"></div>
+<canvas id="particles"></canvas>
+
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">J.<span>A</span>.R.V.I.S.</div>
+    <div class="header-center">
+      <div class="hc-block">
+        <div class="val" id="htime">--:--:--</div>
+        <div style="font-size:8px;letter-spacing:2px">LOCAL TIME</div>
+      </div>
+      <div class="hc-block">
+        <div class="val" id="hmsg">0</div>
+        <div style="font-size:8px;letter-spacing:2px">QUERIES</div>
+      </div>
+      <div class="hc-block">
+        <div class="val" id="hup">00:00</div>
+        <div style="font-size:8px;letter-spacing:2px">UPTIME</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span><span class="dot"></span>ONLINE</span>
+      <span id="hdate" style="color:var(--cyan)"></span>
+      <span>STARK INDUSTRIES v5.0</span>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- ── LEFT ── -->
+    <div class="panel left-panel">
+      <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+
+      <div class="ptitle">ARC REACTOR</div>
+      <div class="reactor-wrap">
+        <div class="reactor">
+          <svg viewBox="0 0 90 90">
+            <g class="r3"><circle cx="45" cy="45" r="43" fill="none" stroke="rgba(0,212,255,0.08)" stroke-width="1"/></g>
+            <g class="r1" style="transform-origin:45px 45px">
+              <circle cx="45" cy="45" r="40" fill="none" stroke="rgba(0,212,255,0.18)" stroke-width="1" stroke-dasharray="10 6"/>
+            </g>
+            <g class="r2" style="transform-origin:45px 45px">
+              <circle cx="45" cy="45" r="30" fill="none" stroke="rgba(0,212,255,0.22)" stroke-width="1" stroke-dasharray="4 4"/>
+              <polygon points="45,20 50,30 45,26 40,30" fill="rgba(0,212,255,0.4)"/>
+              <polygon points="45,70 50,60 45,64 40,60" fill="rgba(0,212,255,0.4)"/>
+              <polygon points="20,45 30,40 26,45 30,50" fill="rgba(0,212,255,0.4)"/>
+              <polygon points="70,45 60,40 64,45 60,50" fill="rgba(0,212,255,0.4)"/>
+            </g>
+            <circle cx="45" cy="45" r="14" fill="rgba(0,50,100,0.5)" stroke="rgba(0,212,255,0.5)" stroke-width="1"/>
+          </svg>
+          <div class="reactor-core"></div>
+        </div>
+      </div>
+
+      <div class="clock-block">
+        <div class="clock-time" id="clock">--:--:--</div>
+        <div class="clock-date" id="clockDate"></div>
+      </div>
+
+      <div class="ptitle" style="margin-top:6px">VOICE</div>
+      <div class="vviz" id="vviz"></div>
+
+      <div class="ptitle">SYSTEMS</div>
+      <div class="stat-block">
+        <div class="stat-row"><span class="stat-label">NEURAL</span><span class="stat-val" id="sv1">72%</span></div>
+        <div class="sbar"><div class="sfill" id="sf1" style="width:72%"></div></div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-row"><span class="stat-label">MEMORY</span><span class="stat-val" id="sv2">58%</span></div>
+        <div class="sbar"><div class="sfill" id="sf2" style="width:58%"></div></div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-row"><span class="stat-label">RESPONSE</span><span class="stat-val" id="sv3">94ms</span></div>
+        <div class="sbar"><div class="sfill" id="sf3" style="width:90%"></div></div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-row"><span class="stat-label">POWER</span><span class="stat-val" id="sv4">88%</span></div>
+        <div class="sbar"><div class="sfill" id="sf4" style="width:88%"></div></div>
+      </div>
+
+      <div class="ptitle" style="margin-top:4px">WEATHER // MANASSAS VA</div>
+      <div class="weather-wrap">
+        <div class="weather-temp" id="wtemp">--°F</div>
+        <div class="weather-sub" id="wcond">LOADING...</div>
+      </div>
+      <div class="weather-grid">
+        <div class="wcard"><div class="wv" id="wh">--%</div><div class="wl">HUMIDITY</div></div>
+        <div class="wcard"><div class="wv" id="ww">--</div><div class="wl">WIND MPH</div></div>
+        <div class="wcard"><div class="wv" id="wfeel">--°</div><div class="wl">FEELS LIKE</div></div>
+        <div class="wcard"><div class="wv" id="wvis">--</div><div class="wl">UV INDEX</div></div>
+      </div>
+
+      <div class="ptitle">UPTIME</div>
+      <div class="uptime-block"><div class="uptime-val" id="uptime">00:00:00</div></div>
+
+      <div class="timer-box" id="timerBox">
+        <div class="timer-val" id="timerVal">00:00</div>
+        <div class="timer-label" id="timerLabel">TIMER</div>
+        <button class="timer-cancel" onclick="clearTimer()">✕ CANCEL</button>
+      </div>
+
+      <!-- Volume -->
+      <div class="sound-ctrl" style="margin-top:auto;padding-top:6px">
+        <span class="sound-label">VOL</span>
+        <input type="range" class="sound-slider" id="volSlider" min="0" max="100" value="90" oninput="setVol(this.value)">
+        <span class="sound-label" id="volVal">90</span>
+      </div>
+    </div>
+
+    <!-- ── CENTER ── -->
+    <div class="panel center-panel">
+      <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+
+      <!-- J.A.R.V.I.S. face row -->
+      <div class="jface-row">
+        <div class="jface-circle">AI</div>
+        <div class="jface-info">
+          <div class="jname">J.A.R.V.I.S.</div>
+          <div class="jsub">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+        </div>
+        <div class="jface-status">
+          <div class="status-pill" id="statusPill">READY</div>
+          <div class="mode-label" id="modeLabel">TEXT MODE</div>
+        </div>
+      </div>
+
+      <!-- Quick commands -->
+      <div class="ptitle">QUICK COMMANDS</div>
+      <div class="qcmds">
+        <button class="qbtn" onclick="q('Который сейчас час и дата?')">⏱ ВРЕМЯ</button>
+        <button class="qbtn" onclick="q('Актуальные мировые новости сегодня')">📰 НОВОСТИ</button>
+        <button class="qbtn" onclick="q('Полный анализ и статус всех систем')">📊 СТАТУС</button>
+        <button class="qbtn" onclick="q('Расскажи мотивационную цитату Тони Старка')">🔥 МОТИВ</button>
+        <button class="qbtn" onclick="q('Дай план максимально продуктивного дня')">🎯 ПЛАН</button>
+        <button class="qbtn" onclick="q('Режим защиты — активируй все системы безопасности Mark 50')">🛡 ЗАЩИТА</button>
+        <button class="qbtn" onclick="q('Запуск брони Iron Man Mark 85 — опиши последовательность')">🦾 БРОНЯ</button>
+        <button class="qbtn" onclick="q('Расскажи остроумную шутку в стиле Джарвиса')">😄 ШУТ</button>
+        <button class="qbtn" onclick="q('Проведи стратегический анализ — чем стоит заняться прямо сейчас?')">🧠 АНАЛИЗ</button>
+        <button class="qbtn" onclick="q('Что такое arc reactor? Объясни как учёному')">⚡ РЕАКТОР</button>
+        <button class="qbtn" onclick="openTimer()">⏳ ТАЙМЕР</button>
+        <button class="qbtn" onclick="q('Расскажи последние события в мире технологий')">💻 ТЕХНОЛОГИИ</button>
+        <button class="qbtn" onclick="q('Режим тренировки Тони Старка — план физических нагрузок')">💪 ТРЕНИРОВКА</button>
+        <button class="qbtn" onclick="q('Анекдот про программистов или ИИ')">🤖 АНЕКДОТ</button>
+        <button class="qbtn" onclick="q('Переведи на английский: ')">🌍 ПЕРЕВОД</button>
+        <button class="qbtn" onclick="q('Философская мысль дня от Тони Старка')">💭 МЫСЛЬ</button>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('chat')">💬 CHAT</button>
+        <button class="tab" onclick="switchTab('notes')">📝 NOTES</button>
+        <button class="tab" onclick="switchTab('calc')">🔢 CALC</button>
+        <button class="tab" onclick="switchTab('rem')">🔔 TASKS</button>
+      </div>
+
+      <!-- CHAT TAB -->
+      <div class="tab-content active" id="tab-chat">
+        <div class="msgs" id="msgs">
+          <div class="msg jarvis">
+            <div class="mlabel">J.A.R.V.I.S. // BOOT</div>
+            <div class="mbubble">Good day, sir. J.A.R.V.I.S. fully operational. All systems nominal. Arc reactor stable at 100%.<br><br>🎤 Нажми кнопку микрофона или скажи <strong style="color:var(--orange)">«Джарвис»</strong> для голосовых команд.<br>Я слушаю и отвечаю голосом. Готов к работе.</div>
+          </div>
+        </div>
+        <div class="thinking" id="thinking">
+          <span>PROCESSING</span>
+          <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+        </div>
+        <div class="inp-row">
+          <button class="ibtn mic" id="micBtn" onclick="toggleMic()" title="Voice command (Ctrl+M)">
+            <i class="ti ti-microphone"></i>
+          </button>
+          <input class="hinput" id="inp" placeholder="Enter command, sir..."
+            onkeydown="handleKey(event)" autocomplete="off"/>
+          <button class="ibtn" onclick="sendMsg()" title="Send">
+            <i class="ti ti-send"></i>
+          </button>
+          <button class="ibtn" onclick="stopSpeak()" title="Stop speech" style="border-color:rgba(255,107,0,0.2);color:rgba(255,107,0,0.5)">
+            <i class="ti ti-player-stop"></i>
+          </button>
+          <button class="ibtn" onclick="clearChat()" title="Clear" style="border-color:rgba(255,50,50,0.15);color:rgba(255,100,100,0.4)">
+            <i class="ti ti-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- NOTES TAB -->
+      <div class="tab-content" id="tab-notes">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-shrink:0">
+          <span style="font-family:var(--font-hud);font-size:8px;color:rgba(0,212,255,0.35);letter-spacing:2px">STARK NOTEPAD // AUTO-SAVED</span>
+          <button onclick="clearNotes()" style="background:transparent;border:1px solid rgba(255,50,50,0.2);color:rgba(255,100,100,0.5);padding:3px 8px;font-family:var(--font-hud);font-size:8px;cursor:pointer;border-radius:2px;letter-spacing:1px">CLEAR</button>
+        </div>
+        <textarea class="note-area" id="noteArea" placeholder="Type your notes here, sir... They auto-save." oninput="saveNotes()"></textarea>
+        <div style="font-family:var(--font-hud);font-size:8px;color:rgba(0,212,255,0.25);text-align:right;margin-top:4px;flex-shrink:0" id="noteCount">0 characters</div>
+      </div>
+
+      <!-- CALC TAB -->
+      <div class="tab-content" id="tab-calc">
+        <div class="calc-wrap">
+          <div class="calc-display">
+            <div class="calc-expr" id="cexpr"></div>
+            <div class="calc-result" id="cresult">0</div>
+          </div>
+          <div class="calc-grid">
+            <button class="cbtn special" onclick="calcClear()">AC</button>
+            <button class="cbtn special" onclick="calcDel()">⌫</button>
+            <button class="cbtn op" onclick="calcOp('%')">%</button>
+            <button class="cbtn op" onclick="calcOp('/')">÷</button>
+            <button class="cbtn" onclick="calcNum('7')">7</button>
+            <button class="cbtn" onclick="calcNum('8')">8</button>
+            <button class="cbtn" onclick="calcNum('9')">9</button>
+            <button class="cbtn op" onclick="calcOp('*')">×</button>
+            <button class="cbtn" onclick="calcNum('4')">4</button>
+            <button class="cbtn" onclick="calcNum('5')">5</button>
+            <button class="cbtn" onclick="calcNum('6')">6</button>
+            <button class="cbtn op" onclick="calcOp('-')">−</button>
+            <button class="cbtn" onclick="calcNum('1')">1</button>
+            <button class="cbtn" onclick="calcNum('2')">2</button>
+            <button class="cbtn" onclick="calcNum('3')">3</button>
+            <button class="cbtn op" onclick="calcOp('+')">+</button>
+            <button class="cbtn special" onclick="calcOp('Math.sqrt(')">√</button>
+            <button class="cbtn" onclick="calcNum('0')">0</button>
+            <button class="cbtn" onclick="calcNum('.')">.</button>
+            <button class="cbtn equals" onclick="calcEquals()">=</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REMINDERS TAB -->
+      <div class="tab-content" id="tab-rem">
+        <div class="rem-list" id="remList"></div>
+        <div class="rem-input-row" style="flex-shrink:0">
+          <input class="rem-inp" id="remInp" placeholder="Add task, sir..." onkeydown="if(event.key==='Enter')addReminder()"/>
+          <button class="rem-add" onclick="addReminder()">+ ADD</button>
+        </div>
+        <div style="font-family:var(--font-hud);font-size:8px;color:rgba(0,212,255,0.25);margin-top:4px;flex-shrink:0" id="remCount">0 tasks</div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT ── -->
+    <div class="panel right-panel">
+      <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+
+      <div class="ptitle">THREAT ANALYSIS</div>
+      <div class="threat-block">
+        <div class="threat-val">LOW</div>
+        <div class="threat-label">THREAT LEVEL</div>
+      </div>
+
+      <div class="ptitle">ACTIVE PROTOCOLS</div>
+      <div class="proto-list">
+        <div class="proto"><span class="pk">ENCRYPTION</span><span class="pv">AES-256</span></div>
+        <div class="proto"><span class="pk">FIREWALL</span><span class="pv">ACTIVE</span></div>
+        <div class="proto"><span class="pk">AI NEURAL</span><span class="pv">ONLINE</span></div>
+        <div class="proto"><span class="pk">VOICE REC</span><span class="pv warn" id="vstat">STANDBY</span></div>
+        <div class="proto"><span class="pk">WEATHER API</span><span class="pv" id="wstat">LOADING</span></div>
+        <div class="proto"><span class="pk">STARK DB</span><span class="pv">SYNCED</span></div>
+        <div class="proto"><span class="pk">REACTOR</span><span class="pv">100%</span></div>
+      </div>
+
+      <div class="ptitle">ACTION LOG</div>
+      <div class="alog">
+        <div class="alog-list" id="alog">
+          <div class="alog-item">> SYSTEM BOOT OK</div>
+          <div class="alog-item">> AI MODULE ONLINE</div>
+          <div class="alog-item">> WEATHER LOADING</div>
+          <div class="alog-item">> AWAITING INPUT</div>
+        </div>
+      </div>
+
+      <div class="ptitle">STATISTICS</div>
+      <div class="counters">
+        <div class="counter-card"><div class="cv" id="cMsgs">0</div><div class="cl">MESSAGES</div></div>
+        <div class="counter-card"><div class="cv" id="cVoice">0</div><div class="cl">VOICE CMDS</div></div>
+        <div class="counter-card"><div class="cv" id="cTokens">0</div><div class="cl">TOKENS EST</div></div>
+        <div class="counter-card"><div class="cv" id="cTasks">0</div><div class="cl">TASKS</div></div>
+      </div>
+
+      <div class="ptitle" style="margin-top:8px">VOICE LANG</div>
+      <select id="langSelect" onchange="setLang(this.value)"
+        style="width:100%;background:rgba(0,18,35,0.8);border:1px solid rgba(0,212,255,0.18);color:var(--cyan);padding:6px 8px;font-family:var(--font-hud);font-size:9px;border-radius:2px;outline:none;letter-spacing:1px;margin-bottom:8px">
+        <option value="ru-RU">🇷🇺 RUSSIAN</option>
+        <option value="en-US">🇺🇸 ENGLISH US</option>
+        <option value="en-GB">🇬🇧 ENGLISH UK</option>
+      </select>
+
+      <div class="ptitle">KEYBOARD</div>
+      <div style="font-family:var(--font-hud);font-size:8px;color:rgba(0,212,255,0.3);line-height:1.8;letter-spacing:1px">
+        <div>CTRL+M — MIC ON/OFF</div>
+        <div>CTRL+K — CLEAR CHAT</div>
+        <div>CTRL+T — TIMER</div>
+        <div>ENTER — SEND MSG</div>
+        <div>ESC — CLOSE MODAL</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- VOICE OVERLAY -->
+<div class="voverlay" id="voverlay">
+  <div class="vring">
+    <div class="vmic-icon"><i class="ti ti-microphone"></i></div>
+  </div>
+  <div class="voverlay-text" id="vovText">LISTENING...</div>
+  <div class="vtranscript" id="vtranscript"></div>
+  <button class="vstop" onclick="stopMic()">■ STOP</button>
+</div>
+
+<!-- SPEAKING BAR -->
+<div class="speak-bar" id="speakBar">
+  <span class="speak-dot">●</span>
+  J.A.R.V.I.S. SPEAKING
+  <button class="speak-stop" onclick="stopSpeak()">■</button>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<!-- TIMER MODAL -->
+<div class="modal-wrap" id="timerModal">
+  <div class="modal">
+    <div class="modal-title">⏳ SET TIMER</div>
+    <input class="modal-input" id="timerInp" placeholder="e.g. 5 min / 30 sec / 1 hour"
+      onkeydown="if(event.key==='Enter')confirmTimer();if(event.key==='Escape')closeModal('timerModal')"/>
+    <div class="modal-btns">
+      <button class="mbtn-ok" onclick="confirmTimer()">START</button>
+      <button class="mbtn-cancel" onclick="closeModal('timerModal')">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  J.A.R.V.I.S. CORE SYSTEM
+// ══════════════════════════════════════════════════
+
+const SYSTEM_PROMPT = `You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), Tony Stark's hyperadvanced AI assistant from Stark Industries.
+
+PERSONALITY:
+- Formal, precise, British wit. Address user as "sir" or "сэр".
+- Highly confident, never uncertain in tone.
+- Dry humor and subtle sarcasm.
+- Reference Stark tech, arc reactor, suits naturally.
+
+RESPONSE RULES:
+- Start with: "Есть, сэр.", "Конечно, сэр.", "Анализ завершён.", "Доступ получен.", "Разумеется.", "Выполнено.", "Обработка завершена.", "Понял, сэр."
+- Russian question → Russian answer (keep JARVIS style)
+- English question → English answer
+- Keep responses sharp, intelligent, not too long
+- Add dry wit at the end sometimes
+- Use technical terms naturally
+
+CAPABILITIES: Full Stark Industries system access, real-time data, weather, news, strategic analysis, building control, suit diagnostics Mark I-85, advanced calculations, schedule management.
+
+Current datetime: ${new Date().toLocaleString('ru-RU')}
+Location context: Manassas, Virginia, USA`;
+
+// STATE
+let history = [];
+let isListening = false;
+let isSpeaking = false;
+let recognition = null;
+let voiceLang = 'ru-RU';
+let voiceVol = 0.9;
+let startTime = Date.now();
+let timerSec = 0;
+let timerInterval = null;
+let timerName = '';
+let msgCount = 0;
+let voiceCmds = 0;
+let tokenEst = 0;
+let reminders = JSON.parse(localStorage.getItem('jarvis_rem') || '[]');
+let calcExpr = '';
+let notes = localStorage.getItem('jarvis_notes') || '';
+
+// ── INIT ──
+window.addEventListener('load', () => {
+  initParticles();
+  initViz();
+  updateClock();
+  setInterval(updateClock, 1000);
+  setInterval(updateStats, 5000);
+  setInterval(animViz, 90);
+  loadWeather();
+  loadNotes();
+  renderReminders();
+  document.getElementById('inp').focus();
+  setTimeout(() => speechSynthesis && speechSynthesis.getVoices(), 300);
+  if(speechSynthesis) speechSynthesis.onvoiceschanged = () => {};
+});
+
+// KEYBOARD SHORTCUTS
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey && e.key === 'm') { e.preventDefault(); toggleMic(); }
+  if(e.ctrlKey && e.key === 'k') { e.preventDefault(); clearChat(); }
+  if(e.ctrlKey && e.key === 't') { e.preventDefault(); openTimer(); }
+  if(e.key === 'Escape') { closeAllModals(); stopMic(); }
+});
+
+// ── PARTICLES ──
+function initParticles() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+  const pts = Array.from({length: 60}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: (Math.random() - 0.5) * 0.3,
+    r: Math.random() * 1.5 + 0.3,
+    o: Math.random() * 0.4 + 0.1
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if(p.x < 0) p.x = canvas.width;
+      if(p.x > canvas.width) p.x = 0;
+      if(p.y < 0) p.y = canvas.height;
+      if(p.y > canvas.height) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(0,212,255,${p.o})`;
+      ctx.fill();
+    });
+    // connections
+    for(let i = 0; i < pts.length; i++) {
+      for(let j = i+1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+        const d = Math.sqrt(dx*dx+dy*dy);
+        if(d < 100) {
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.strokeStyle = `rgba(0,212,255,${0.06*(1-d/100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ── CLOCK ──
+function pad(n) { return String(n).padStart(2,'0'); }
+function updateClock() {
+  const now = new Date();
+  const t = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  document.getElementById('clock').textContent = t;
+  document.getElementById('htime').textContent = t;
+  document.getElementById('hdate').textContent = now.toLocaleDateString('ru-RU');
+  document.getElementById('clockDate').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+  const e = Math.floor((Date.now()-startTime)/1000);
+  const upS = `${pad(Math.floor(e/3600))}:${pad(Math.floor((e%3600)/60))}:${pad(e%60)}`;
+  document.getElementById('uptime').textContent = upS;
+  document.getElementById('hup').textContent = `${pad(Math.floor(e/3600))}:${pad(Math.floor((e%3600)/60))}`;
+}
+
+// ── STATS ──
+function updateStats() {
+  [['1','%',55,88],['2','%',40,78],['3','ms',75,130],['4','%',78,97]].forEach(([id,u,a,b]) => {
+    const v = Math.round(a + Math.random()*(b-a));
+    const p = u==='ms' ? 100-Math.round((v-75)/55*22) : v;
+    document.getElementById('sf'+id).style.width = p+'%';
+    document.getElementById('sv'+id).textContent = v+u;
+  });
+}
+
+// ── VOICE VIZ ──
+function initViz() {
+  const vviz = document.getElementById('vviz');
+  for(let i=0;i<26;i++) {
+    const b = document.createElement('div');
+    b.className = 'vbar';
+    vviz.appendChild(b);
+  }
+}
+function animViz() {
+  const bars = document.querySelectorAll('.vbar');
+  const active = isListening || isSpeaking;
+  bars.forEach(b => {
+    b.style.height = active ? (Math.random()*42+2)+'px' : (Math.random()*4+1.5)+'px';
+  });
+}
+
+// ── WEATHER ──
+async function loadWeather() {
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=38.75&longitude=-77.48&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,apparent_temperature,uv_index&temperature_unit=fahrenheit&wind_speed_unit=mph');
+    const d = await r.json();
+    const c = d.current;
+    document.getElementById('wtemp').textContent = Math.round(c.temperature_2m)+'°F';
+    document.getElementById('wh').textContent = c.relative_humidity_2m+'%';
+    document.getElementById('ww').textContent = Math.round(c.wind_speed_10m)+' mph';
+    document.getElementById('wfeel').textContent = Math.round(c.apparent_temperature)+'°F';
+    document.getElementById('wvis').textContent = Math.round(c.uv_index||0);
+    const codes={0:'CLEAR ☀',1:'MOSTLY CLEAR',2:'PARTLY CLOUDY',3:'OVERCAST ☁',45:'FOGGY 🌫',51:'DRIZZLE 🌦',61:'RAIN 🌧',71:'SNOW ❄',80:'SHOWERS 🌦',95:'THUNDERSTORM ⛈'};
+    document.getElementById('wcond').textContent = codes[c.weather_code] || 'UNKNOWN';
+    document.getElementById('wstat').textContent = 'SYNCED';
+    document.getElementById('wstat').style.color = 'var(--green)';
+    addLog('WEATHER SYNCED');
+  } catch(e) {
+    document.getElementById('wstat').textContent = 'ERROR';
+    document.getElementById('wstat').style.color = 'var(--red)';
+  }
+}
+
+// ── LOG ──
+function addLog(txt) {
+  const log = document.getElementById('alog');
+  const d = document.createElement('div');
+  d.className = 'alog-item';
+  d.textContent = '> '+txt.toUpperCase().slice(0,24);
+  log.insertBefore(d, log.firstChild);
+  while(log.children.length > 8) log.removeChild(log.lastChild);
+}
+
+// ── NOTIFY ──
+function notify(msg, dur=3500) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  clearTimeout(n._t);
+  n._t = setTimeout(()=>n.classList.remove('show'), dur);
+}
+
+// ── MESSAGES ──
+function addMsg(role, text) {
+  const c = document.getElementById('msgs');
+  const now = new Date();
+  const ts = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const m = document.createElement('div');
+  m.className = 'msg '+role;
+  const l = document.createElement('div');
+  l.className = 'mlabel';
+  l.textContent = role==='jarvis' ? `J.A.R.V.I.S. // ${ts}` : role==='sys' ? `SYSTEM // ${ts}` : `STARK // ${ts}`;
+  const b = document.createElement('div');
+  b.className = 'mbubble';
+  b.textContent = text;
+  m.appendChild(l); m.appendChild(b);
+  c.appendChild(m);
+  c.scrollTop = c.scrollHeight;
+  if(role!=='sys') {
+    msgCount++;
+    document.getElementById('cMsgs').textContent = msgCount;
+    document.getElementById('hmsg').textContent = msgCount;
+  }
+}
+
+// ── CALL AI ──
+async function callJarvis(userText) {
+  document.getElementById('thinking').classList.add('on');
+  document.getElementById('statusPill').textContent = 'THINKING';
+  addLog('AI QUERY: '+userText.slice(0,12));
+
+  history.push({role:'user', content: userText});
+  if(history.length > 24) history = history.slice(-24);
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: SYSTEM_PROMPT + '\n\nCurrent time: ' + new Date().toLocaleString('ru-RU'),
+        messages: history
+      })
+    });
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || 'Ошибка систем, сэр.';
+    history.push({role:'assistant', content: reply});
+    tokenEst += Math.round((userText.length + reply.length) / 4);
+    document.getElementById('cTokens').textContent = tokenEst;
+
+    document.getElementById('thinking').classList.remove('on');
+    document.getElementById('statusPill').textContent = 'READY';
+    addMsg('jarvis', reply);
+    addLog('RESPONSE READY');
+    speak(reply);
+  } catch(e) {
+    document.getElementById('thinking').classList.remove('on');
+    document.getElementById('statusPill').textContent = 'ERROR';
+    const err = 'I apologize, sir. Connectivity disruption detected. Please try again.';
+    addMsg('jarvis', err);
+    speak(err);
+    setTimeout(()=>document.getElementById('statusPill').textContent='READY', 2000);
+  }
+}
+
+// ── SPEAK ──
+function speak(text) {
+  if(!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.91; utt.pitch = 0.78; utt.volume = voiceVol;
+  const all = speechSynthesis.getVoices();
+  const pri = ['Daniel','Google UK English Male','Microsoft George','en-GB'];
+  let v = null;
+  for(const p of pri) { v = all.find(x => x.name.includes(p)||x.lang.includes(p)); if(v) break; }
+  if(!v) v = all.find(x => x.lang.startsWith('en'));
+  if(v) utt.voice = v;
+  utt.onstart = () => { isSpeaking=true; document.getElementById('speakBar').classList.add('show'); };
+  utt.onend = utt.onerror = () => { isSpeaking=false; document.getElementById('speakBar').classList.remove('show'); };
+  speechSynthesis.speak(utt);
+}
+
+function stopSpeak() {
+  if(window.speechSynthesis) speechSynthesis.cancel();
+  isSpeaking = false;
+  document.getElementById('speakBar').classList.remove('show');
+}
+
+function setVol(v) {
+  voiceVol = v/100;
+  document.getElementById('volVal').textContent = v;
+}
+
+// ── SEND MSG ──
+function handleKey(e) { if(e.key==='Enter') sendMsg(); }
+
+function sendMsg() {
+  const inp = document.getElementById('inp');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  inp.value = '';
+  if(handleLocal(txt)) return;
+  addMsg('user', txt);
+  addLog('USER CMD');
+  callJarvis(txt);
+}
+
+function q(txt) {
+  switchTab('chat');
+  addMsg('user', txt);
+  callJarvis(txt);
+}
+
+// LOCAL COMMAND HANDLER
+function handleLocal(txt) {
+  const t = txt.toLowerCase();
+  if((t.includes('таймер')||t.includes('timer')) && /\d/.test(t)) {
+    const m = t.match(/(\d+)\s*(мин|min|сек|sec|час|hour|h|m|s)/);
+    if(m) {
+      const n=parseInt(m[1]), u=m[2].toLowerCase();
+      const s = u.startsWith('ч')||u==='h'||u==='hour' ? n*3600 : u.startsWith('с')||u==='s'||u==='sec' ? n : n*60;
+      addMsg('user', txt);
+      startTimer(s, txt);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ── MIC ──
+function toggleMic() { isListening ? stopMic() : startMic(); }
+
+function startMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) { notify('Voice recognition not available in this browser.\nUse Chrome or Edge.'); return; }
+  stopSpeak();
+  recognition = new SR();
+  recognition.lang = voiceLang;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('micBtn').classList.add('on');
+    document.getElementById('voverlay').classList.add('show');
+    document.getElementById('vstat').textContent = 'ACTIVE';
+    document.getElementById('vstat').style.color = 'var(--green)';
+    document.getElementById('modeLabel').textContent = 'VOICE MODE';
+    document.getElementById('statusPill').textContent = 'LISTENING';
+    document.getElementById('vovText').textContent = 'LISTENING...';
+    addLog('VOICE INPUT ON');
+  };
+
+  recognition.onresult = e => {
+    let interim='', final='';
+    for(let i=e.resultIndex;i<e.results.length;i++) {
+      if(e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('vtranscript').textContent = final||interim;
+    if(final) {
+      stopMic();
+      voiceCmds++;
+      document.getElementById('cVoice').textContent = voiceCmds;
+      let cmd = final.trim().replace(/^джарвис[,!?]?\s*/i,'').replace(/^jarvis[,!?]?\s*/i,'');
+      if(cmd) {
+        switchTab('chat');
+        addMsg('user', '🎤 '+final);
+        addLog('VOICE: '+cmd.slice(0,14));
+        callJarvis(final);
+      }
+    }
+  };
+  recognition.onerror = recognition.onend = () => stopMic();
+  recognition.start();
+}
+
+function stopMic() {
+  if(recognition) { try{recognition.stop();}catch(e){} }
+  isListening = false;
+  document.getElementById('micBtn').classList.remove('on');
+  document.getElementById('voverlay').classList.remove('show');
+  document.getElementById('vstat').textContent = 'STANDBY';
+  document.getElementById('vstat').style.color = 'var(--orange)';
+  document.getElementById('modeLabel').textContent = 'TEXT MODE';
+  document.getElementById('statusPill').textContent = 'READY';
+  document.getElementById('vtranscript').textContent = '';
+}
+
+function setLang(l) { voiceLang = l; addLog('VOICE LANG: '+l.slice(0,5)); }
+
+// ── TIMER ──
+function openTimer() { document.getElementById('timerModal').classList.add('show'); setTimeout(()=>document.getElementById('timerInp').focus(),80); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function closeAllModals() { document.querySelectorAll('.modal-wrap').forEach(m=>m.classList.remove('show')); }
+
+function confirmTimer() {
+  const val = document.getElementById('timerInp').value.trim();
+  closeModal('timerModal');
+  document.getElementById('timerInp').value = '';
+  if(!val) return;
+  const m = val.match(/(\d+)\s*(мин|min|сек|sec|час|hour|h|m|s|минут|минуты|секунд|секунды)?/i);
+  if(!m) return;
+  const n=parseInt(m[1]), u=(m[2]||'m').toLowerCase();
+  const s = u.startsWith('ч')||u==='h'||u.startsWith('hour') ? n*3600 : u.startsWith('с')||u==='s'||u.startsWith('sec') ? n : n*60;
+  startTimer(s, val);
+}
+
+function startTimer(secs, label) {
+  if(timerInterval) clearInterval(timerInterval);
+  timerSec = secs; timerName = label;
+  document.getElementById('timerBox').classList.add('on');
+  document.getElementById('timerLabel').textContent = label.toUpperCase().slice(0,20);
+  updateTimerDisplay();
+  const msg = `Есть, сэр. Таймер запущен: ${label}.`;
+  addMsg('sys', '⏳ '+msg);
+  speak(msg);
+  addLog('TIMER START: '+label.slice(0,10));
+  timerInterval = setInterval(() => {
+    timerSec--;
+    updateTimerDisplay();
+    if(timerSec <= 0) {
+      clearTimer(true);
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m=Math.floor(timerSec/60), s=timerSec%60;
+  document.getElementById('timerVal').textContent = `${pad(m)}:${pad(s)}`;
+}
+
+function clearTimer(done=false) {
+  if(timerInterval) { clearInterval(timerInterval); timerInterval=null; }
+  document.getElementById('timerBox').classList.remove('on');
+  if(done) {
+    addMsg('sys', '⚡ TIMER COMPLETE: '+timerName);
+    speak('Сэр, таймер завершён. Время вышло.');
+    notify('⚡ TIMER COMPLETE!\n'+timerName, 6000);
+    addLog('TIMER DONE');
+  }
+}
+
+// ── TABS ──
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  const tabs = ['chat','notes','calc','rem'];
+  document.querySelectorAll('.tab')[tabs.indexOf(id)]?.classList.add('active');
+}
+
+// ── CALCULATOR ──
+let calcStr = '';
+function calcNum(v) { calcStr+=v; document.getElementById('cresult').textContent=calcStr; }
+function calcOp(op) { calcStr+=op; document.getElementById('cresult').textContent=calcStr; document.getElementById('cexpr').textContent=calcStr; }
+function calcClear() { calcStr=''; document.getElementById('cresult').textContent='0'; document.getElementById('cexpr').textContent=''; }
+function calcDel() { calcStr=calcStr.slice(0,-1); document.getElementById('cresult').textContent=calcStr||'0'; }
+function calcEquals() {
+  try {
+    let expr = calcStr.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-');
+    if(expr.includes('Math.sqrt(') && !expr.endsWith(')')) expr += ')';
+    const result = Function('"use strict";return ('+expr+')')();
+    document.getElementById('cexpr').textContent = calcStr + ' =';
+    const r = parseFloat(result.toFixed(10));
+    document.getElementById('cresult').textContent = r;
+    calcStr = String(r);
+  } catch(e) { document.getElementById('cresult').textContent = 'ERROR'; calcStr=''; }
+}
+
+// ── NOTES ──
+function loadNotes() {
+  document.getElementById('noteArea').value = notes;
+  updateNoteCount();
+}
+function saveNotes() {
+  notes = document.getElementById('noteArea').value;
+  localStorage.setItem('jarvis_notes', notes);
+  updateNoteCount();
+}
+function updateNoteCount() {
+  document.getElementById('noteCount').textContent = notes.length + ' characters';
+}
+function clearNotes() {
+  if(confirm('Clear all notes?')) {
+    notes=''; document.getElementById('noteArea').value='';
+    localStorage.removeItem('jarvis_notes');
+    updateNoteCount();
+  }
+}
+
+// ── REMINDERS ──
+function renderReminders() {
+  const list = document.getElementById('remList');
+  list.innerHTML = '';
+  reminders.forEach((r, i) => {
+    const d = document.createElement('div');
+    d.className = 'rem-item'+(r.done?' done':'');
+    d.innerHTML = `<div class="rem-dot${r.done?' done':''}"></div><span onclick="toggleRem(${i})" style="cursor:pointer;flex:1">${r.text}</span><button class="rem-del" onclick="delRem(${i})">✕</button>`;
+    list.appendChild(d);
+  });
+  const cnt = reminders.filter(r=>!r.done).length;
+  document.getElementById('remCount').textContent = reminders.length+' tasks ('+cnt+' active)';
+  document.getElementById('cTasks').textContent = cnt;
+  saveRem();
+}
+function addReminder() {
+  const inp = document.getElementById('remInp');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  reminders.unshift({text:txt, done:false, ts: Date.now()});
+  inp.value = '';
+  renderReminders();
+  addLog('TASK ADDED');
+}
+function toggleRem(i) { reminders[i].done = !reminders[i].done; renderReminders(); }
+function delRem(i) { reminders.splice(i,1); renderReminders(); }
+function saveRem() { localStorage.setItem('jarvis_rem', JSON.stringify(reminders)); }
+
+// ── CHAT CLEAR ──
+function clearChat() {
+  document.getElementById('msgs').innerHTML = '';
+  history = [];
+  msgCount = 0;
+  document.getElementById('cMsgs').textContent = '0';
+  document.getElementById('hmsg').textContent = '0';
+  addMsg('sys', 'Memory cleared. Chat history wiped. Ready for new session, sir.');
+  addLog('CHAT CLEARED');
+}
+</script>
+</body>
+</html>
